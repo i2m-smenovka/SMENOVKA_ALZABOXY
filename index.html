@@ -6,7 +6,7 @@
      JEDINÉ, ČO TREBA UPRAVIŤ: medzi úvodzovky nižšie vlož odkaz na smenovku
      (Apps Script → Nasadiť → Spravovať nasadenia → Webová aplikácia → URL, končí na /exec)
      ================================================================================== -->
-<script>var SMENOVKA_URL = "https://script.google.com/macros/s/AKfycbyvXUvwCibiBhopj_AMIAvV0_bkNU6Jj8RgPqn_Yu8oWhdkq6O21ZBLkFjwYxcTbbA/exec";</script>
+<script>var SMENOVKA_URL = "SEM_VLOZ_ODKAZ_NA_SMENOVKU";</script>
 <title>Smenovka ALZABOXY</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#ffffff">
@@ -72,11 +72,16 @@
   }
   var ZAR = (function () { var u = navigator.userAgent, m = u.match(/Android [\d.]+; ([^;)]+)/); if (m) return 'Android · ' + m[1].replace(/ Build.*$/, ''); if (/iPhone|iPad/.test(u)) return (/iPad/.test(u) ? 'iPad' : 'iPhone') + ' · iOS ' + ((u.match(/OS ([\d_]+)/) || [])[1] || '').replace(/_/g, '.'); return (navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || '?'; })();
   function hlas(t) { try { if (APP) APP.postMessage({ obal: 'smenovka', typ: 'pushHlasenie', text: t, zariadenie: ZAR }, '*'); } catch (e) {} }
+  var POKUS = 0;
   function posliToken() {
     if (!APP || Notification.permission !== 'granted') return;
-    Promise.all([nacitajFirebase(), SW]).then(function (x) { return x[0].getToken({ vapidKey: self.VAPID_KEY, serviceWorkerRegistration: x[1] }); })
+    Promise.all([nacitajFirebase(), navigator.serviceWorker.ready]).then(function (x) { return x[0].getToken({ vapidKey: self.VAPID_KEY, serviceWorkerRegistration: x[1] }); })
       .then(function (t) { if (!t) { hlas('Firebase nevrátil token.'); return; } if (APP) APP.postMessage({ obal: 'smenovka', typ: 'pushToken', token: t, link: location.href.split('#')[0].split('?')[0], zariadenie: ZAR }, '*'); })
-      .catch(function (e) { console.warn('Upozornenia: ' + e); hlas('Chyba pri registrácii: ' + ((e && (e.code || e.message)) || e)); });
+      .catch(function (e) {
+        console.warn('Upozornenia: ' + e);
+        if (POKUS++ < 2) { setTimeout(posliToken, 4000 * POKUS); return; }   /* pomocný skript sa ešte inštaluje / chvíľková chyba – skúsi znova */
+        hlas('Chyba pri registrácii: ' + ((e && (e.message || e.name || e.code)) || e));
+      });
   }
   var pas = null;
   function ukazPas() {
@@ -104,6 +109,9 @@
         if (Notification.permission === 'granted') posliToken(); else { if (Notification.permission === 'denied') hlas('Upozornenia sú v telefóne zablokované (povoľ ich v nastaveniach).'); ukazPas(); }
       }
       if (d.smenovka === 'odhlaseny') { PRIHLASENY = false; skryPas(); }
+      /* prihlásenie si pamätá obal (iPhone vloženej stránke pamäť maže) */
+      if (d.smenovka === 'prihlasenieUloz') { try { d.t ? localStorage.setItem('smenovkaPrihlasenie', String(d.t)) : localStorage.removeItem('smenovkaPrihlasenie'); } catch (x) {} }
+      if (d.smenovka === 'prihlasenieDaj') { var t = ''; try { t = localStorage.getItem('smenovkaPrihlasenie') || ''; } catch (x) {} e.source.postMessage({ obal: 'smenovka', typ: 'prihlasenie', t: t }, e.origin); }
     } catch (x) {}
   });
 </script>
