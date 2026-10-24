@@ -6,7 +6,7 @@
      JEDINÉ, ČO TREBA UPRAVIŤ: medzi úvodzovky nižšie vlož odkaz na smenovku
      (Apps Script → Nasadiť → Spravovať nasadenia → Webová aplikácia → URL, končí na /exec)
      ================================================================================== -->
-<script>var SMENOVKA_URL = "https://script.google.com/macros/s/AKfycbyvXUvwCibiBhopj_AMIAvV0_bkNU6Jj8RgPqn_Yu8oWhdkq6O21ZBLkFjwYxcTbbA/exec";</script>
+<script>var SMENOVKA_URL = "SEM_VLOZ_ODKAZ_NA_SMENOVKU";</script>
 <title>Smenovka ALZABOXY</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#ffffff">
@@ -64,14 +64,19 @@
     if (fbScript) return fbScript;
     var js = function (src) { return new Promise(function (ok, chyba) { var s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = chyba; document.head.appendChild(s); }); };
     fbScript = js('https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js').then(function () { return js('https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js'); })
-      .then(function () { if (!firebase.apps.length) firebase.initializeApp(self.FIREBASE_CONFIG); return firebase.messaging(); });
+      .then(function () {
+        if (!firebase.apps.length) firebase.initializeApp(self.FIREBASE_CONFIG);
+        return firebase.messaging();
+      });
     return fbScript;
   }
+  var ZAR = (function () { var u = navigator.userAgent, m = u.match(/Android [\d.]+; ([^;)]+)/); if (m) return 'Android · ' + m[1].replace(/ Build.*$/, ''); if (/iPhone|iPad/.test(u)) return (/iPad/.test(u) ? 'iPad' : 'iPhone') + ' · iOS ' + ((u.match(/OS ([\d_]+)/) || [])[1] || '').replace(/_/g, '.'); return (navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || '?'; })();
+  function hlas(t) { try { if (APP) APP.postMessage({ obal: 'smenovka', typ: 'pushHlasenie', text: t, zariadenie: ZAR }, '*'); } catch (e) {} }
   function posliToken() {
     if (!APP || Notification.permission !== 'granted') return;
     Promise.all([nacitajFirebase(), SW]).then(function (x) { return x[0].getToken({ vapidKey: self.VAPID_KEY, serviceWorkerRegistration: x[1] }); })
-      .then(function (t) { if (t && APP) APP.postMessage({ obal: 'smenovka', typ: 'pushToken', token: t, link: location.href.split('#')[0].split('?')[0], zariadenie: (navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || '' }, '*'); })
-      .catch(function (e) { console.warn('Upozornenia: ' + e); });
+      .then(function (t) { if (!t) { hlas('Firebase nevrátil token.'); return; } if (APP) APP.postMessage({ obal: 'smenovka', typ: 'pushToken', token: t, link: location.href.split('#')[0].split('?')[0], zariadenie: ZAR }, '*'); })
+      .catch(function (e) { console.warn('Upozornenia: ' + e); hlas('Chyba pri registrácii: ' + ((e && (e.code || e.message)) || e)); });
   }
   var pas = null;
   function ukazPas() {
@@ -85,7 +90,7 @@
     pas.addEventListener('click', function (e) {
       var b = e.target.closest('button'); if (!b) return;
       if (b.getAttribute('data-a') === 'nie') { try { localStorage.setItem('pushNeskor', String(Date.now() + 3 * 864e5)); } catch (x) {} skryPas(); return; }
-      Notification.requestPermission().then(function (p) { skryPas(); if (p === 'granted') posliToken(); });
+      Notification.requestPermission().then(function (p) { skryPas(); if (p === 'granted') posliToken(); else hlas('Povolenie upozornení: ' + p); });
     });
     document.body.appendChild(pas);
   }
@@ -93,7 +98,11 @@
   window.addEventListener('message', function (e) {
     try {
       var d = e.data; if (!d || !/(\.googleusercontent\.com|script\.google\.com)$/.test(new URL(e.origin).hostname)) return;
-      if (d.smenovka === 'prihlaseny') { APP = e.source; PRIHLASENY = !d.demo; if (!PRIHLASENY) return; if (Notification.permission === 'granted') posliToken(); else ukazPas(); }
+      if (d.smenovka === 'prihlaseny') {
+        APP = e.source; PRIHLASENY = !d.demo; if (!PRIHLASENY) return;
+        if (!pushPodpora()) { hlas(!self.FIREBASE_CONFIG || !self.VAPID_KEY ? 'V push-config.js chýba firebaseConfig alebo VAPID_KEY.' : !('Notification' in window) || !('PushManager' in window) ? 'Prehliadač upozornenia nepodporuje.' : 'Appka nie je otvorená z plochy (iPhone).'); return; }
+        if (Notification.permission === 'granted') posliToken(); else { if (Notification.permission === 'denied') hlas('Upozornenia sú v telefóne zablokované (povoľ ich v nastaveniach).'); ukazPas(); }
+      }
       if (d.smenovka === 'odhlaseny') { PRIHLASENY = false; skryPas(); }
     } catch (x) {}
   });
