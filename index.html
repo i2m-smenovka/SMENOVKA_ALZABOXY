@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<!-- ==================================================================================
+     JEDINÉ, ČO TREBA UPRAVIŤ: medzi úvodzovky nižšie vlož odkaz na smenovku
+     (Apps Script → Nasadiť → Spravovať nasadenia → Webová aplikácia → URL, končí na /exec)
+     ================================================================================== -->
+<script>var SMENOVKA_URL = "SEM_VLOZ_ODKAZ_NA_SMENOVKU";</script>
+<title>Smenovka ALZABOXY</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#ffffff">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Smenovka">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>
+  html, body { margin: 0; height: 100%; background: #fff; overflow: hidden; }
+  iframe { position: fixed; inset: 0; width: 100%; height: 100%; border: 0; display: block; }
+  #uvod { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; font: 600 15px/1.4 system-ui, -apple-system, Segoe UI, Roboto, sans-serif; color: #555; background: #fff; transition: opacity .3s; text-align: center; padding: 0 24px; }
+  #uvod img { width: 120px; height: 120px; }
+  #uvod .bar { width: 140px; height: 4px; border-radius: 4px; background: #eee; overflow: hidden; }
+  #uvod .bar i { display: block; width: 40%; height: 100%; background: #6CBD45; animation: b 1.1s ease-in-out infinite; }
+  @keyframes b { 0% { margin-left: -40% } 100% { margin-left: 100% } }
+  #uvod.skry { opacity: 0; pointer-events: none; }
+</style>
+</head>
+<body>
+<div id="uvod"><img src="icon-512.png" alt="I2M"><div class="bar"><i></i></div><div id="uvodTxt">Načítavam smenovku…</div></div>
+<script>
+  (function () {
+    var uvod = document.getElementById('uvod'), txt = document.getElementById('uvodTxt');
+    if (!/^https:\/\/script\.google\.com\//.test(SMENOVKA_URL)) { txt.innerHTML = 'V súbore <b>index.html</b> ešte nie je vložený odkaz na smenovku (SMENOVKA_URL).'; return; }
+    var f = document.createElement('iframe');
+    f.src = SMENOVKA_URL;
+    f.title = 'Smenovka ALZABOXY';
+    f.allow = 'camera; microphone; geolocation; clipboard-read; clipboard-write; fullscreen; web-share';
+    f.addEventListener('load', function () { uvod.classList.add('skry'); });
+    document.body.appendChild(f);
+    setTimeout(function () { uvod.classList.add('skry'); }, 15000);   // keby sa „load“ neohlásil
+    window.addEventListener('offline', function () { uvod.classList.remove('skry'); txt.textContent = 'Nie je pripojenie na internet – smenovka sa načíta, keď sa pripojenie vráti.'; });
+    window.addEventListener('online', function () { location.reload(); });
+  })();
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function () {});
+</script>
+</body>
+</html>
