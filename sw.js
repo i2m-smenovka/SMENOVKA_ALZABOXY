@@ -1,7 +1,7 @@
 /* Smenovka – pomocný skript appky: pamätá si len obal (stránku, ikony), aby sa appka otvorila hneď.
    Údaje smenovky sa sem neukladajú – tie sú stále v Google Sheete a na Google Disku. */
-const VERZIA = 'smenovka-obal-2';
-const SUBORY = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './icon-maskable-512.png', './apple-touch-icon.png'];
+const VERZIA = 'smenovka-obal-4';
+const SUBORY = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './icon-maskable-512.png', './apple-touch-icon.png', './logo-i2m.png'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(VERZIA).then(c => c.addAll(SUBORY)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(k => Promise.all(k.filter(x => x !== VERZIA).map(x => caches.delete(x)))).then(() => self.clients.claim())); });
 self.addEventListener('fetch', e => {

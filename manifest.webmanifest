@@ -8,7 +8,7 @@
   "display": "standalone",
   "orientation": "any",
   "background_color": "#ffffff",
-  "theme_color": "#ffffff",
+  "theme_color": "#6CBD45",
   "lang": "sk",
   "launch_handler": { "client_mode": "focus-existing" },
   "icons": [
